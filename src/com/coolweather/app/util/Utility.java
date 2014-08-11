@@ -11,6 +11,7 @@ import com.coolweather.app.db.CoolWeatherDB;
 import com.coolweather.app.model.City;
 import com.coolweather.app.model.County;
 import com.coolweather.app.model.Province;
+import com.coolweather.app.model.Weather;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -78,6 +79,7 @@ public class Utility {
 					county.setCountyCode(array[0]);
 					county.setCountyName(array[1]);
 					county.setCityId(cityId);
+					county.setIsSelected(0);
 					// 将解析出来的数据存储到County表
 					coolWeatherDB.saveCounty(county);
 				}
@@ -90,7 +92,7 @@ public class Utility {
 	/**
 	 * 解析服务器返回的JSON数据，并将解析出的数据存储到本地。
 	 */
-	public static void handleWeatherResponse(Context context, String response) {
+	public static Weather handleWeatherResponse(Context context, String response) {
 		try {
 			JSONObject jsonObject = new JSONObject(response);
 			JSONObject weatherInfo = jsonObject.getJSONObject("weatherinfo");
@@ -100,21 +102,28 @@ public class Utility {
 			String temp2 = weatherInfo.getString("temp2");
 			String weatherDesp = weatherInfo.getString("weather");
 			String publishTime = weatherInfo.getString("ptime");
-			saveWeatherInfo(context, cityName, weatherCode, temp1, temp2,
-					weatherDesp, publishTime);
+			
+			Weather weather = new Weather();
+			weather.setAreaName(cityName);
+			weather.setWeatherCode(weatherCode);
+			weather.setTempHigh(temp1);
+			weather.setTempLow(temp2);
+			weather.setWeatherDesp(weatherDesp);
+			weather.setPublishTime(publishTime);
+			saveWeatherInfo(context, weather);
+			return weather;
 		} catch (JSONException e) {
 			e.printStackTrace();
+			return null;
 		}
 	}
 
 	/**
-	 * 将服务器返回的所有天气信息存储到SharedPreferences文件中。
+	 * 将服务器返回的所有天气信息存储到数据库中。
 	 */
-	public static void saveWeatherInfo(Context context, String cityName,
-			String weatherCode, String temp1, String temp2, String weatherDesp,
-			String publishTime) {
+	public static void saveWeatherInfo(Context context, Weather weather) {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy年M月d日", Locale.CHINA);
-		SharedPreferences.Editor editor = PreferenceManager
+		/*SharedPreferences.Editor editor = PreferenceManager
 				.getDefaultSharedPreferences(context).edit();
 		editor.putBoolean("city_selected", true);
 		editor.putString("city_name", cityName);
@@ -124,7 +133,8 @@ public class Utility {
 		editor.putString("weather_desp", weatherDesp);
 		editor.putString("publish_time", publishTime);
 		editor.putString("current_date", sdf.format(new Date()));
-		editor.commit();
+		editor.commit();*/
+		CoolWeatherDB.getInstance(context).saveWeather(weather);
 	}
 
 }

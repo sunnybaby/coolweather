@@ -9,6 +9,7 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.view.View;
@@ -74,10 +75,12 @@ public class ChooseAreaActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		AdManager.getInstance(this).init("cf9c2a749cd97145","289874826c698edd", false);
+		coolWeatherDB = CoolWeatherDB.getInstance(this);
 		isFromWeatherActivity = getIntent().getBooleanExtra("from_weather_activity", false);
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		if (prefs.getBoolean("city_selected", false) && !isFromWeatherActivity) {
+		List<County> selectedCountyList = coolWeatherDB.getAllSelectedCounty();
+		if (selectedCountyList != null && selectedCountyList.size() > 0 && !isFromWeatherActivity) {
 			Intent intent = new Intent(this, WeatherActivity.class);
+			intent.putParcelableArrayListExtra("selected", (ArrayList<? extends Parcelable>) selectedCountyList);
 			startActivity(intent);
 			finish();
 			return;
@@ -88,7 +91,6 @@ public class ChooseAreaActivity extends Activity {
 		titleText = (TextView) findViewById(R.id.title_text);
 		adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, dataList);
 		listView.setAdapter(adapter);
-		coolWeatherDB = CoolWeatherDB.getInstance(this);
 		listView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> arg0, View view, int index,
@@ -100,9 +102,14 @@ public class ChooseAreaActivity extends Activity {
 					selectedCity = cityList.get(index);
 					queryCounties();
 				} else if (currentLevel == LEVEL_COUNTY) {
+					County county = countyList.get(index);
+					county.setIsSelected(1);
+					coolWeatherDB.updateCounty(county);
+					
 					String countyCode = countyList.get(index).getCountyCode();
+					List<County> selectedCountyList = coolWeatherDB.getAllSelectedCounty();
 					Intent intent = new Intent(ChooseAreaActivity.this, WeatherActivity.class);
-					intent.putExtra("county_code", countyCode);
+					intent.putParcelableArrayListExtra("selected", (ArrayList<? extends Parcelable>) selectedCountyList);
 					startActivity(intent);
 					finish();
 				}

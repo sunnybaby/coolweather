@@ -6,6 +6,7 @@ import java.util.List;
 import com.coolweather.app.model.City;
 import com.coolweather.app.model.County;
 import com.coolweather.app.model.Province;
+import com.coolweather.app.model.Weather;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -22,7 +23,7 @@ public class CoolWeatherDB {
 	/**
 	 * 数据库版本
 	 */
-	public static final int VERSION = 1;
+	public static final int VERSION = 2;
 
 	private static CoolWeatherDB coolWeatherDB;
 
@@ -149,5 +150,95 @@ public class CoolWeatherDB {
 		}
 		return list;
 	}
+	
+	/**
+	 * 将County实例存储到数据库。
+	 */
+	public void updateCounty(County county) {
+		if (county != null) {
+			ContentValues values = new ContentValues();
+			values.put("county_name", county.getCountyName());
+			values.put("county_code", county.getCountyCode());
+			values.put("city_id", county.getCityId());
+			values.put("is_selected", county.getIsSelected());
+			db.update("County", values, "county_code = ?", new String[] { county.getCountyCode() });
+		}
+	}
+	
+	public List<County> getAllSelectedCounty() {
+		List<County> list = new ArrayList<County>();
+		Cursor cursor = db.query("County", null, "is_selected = ?",
+				new String[] { String.valueOf(1) }, null, null, null);
+		if (cursor.moveToFirst()) {
+			do {
+				County county = new County();
+				county.setId(cursor.getInt(cursor.getColumnIndex("id")));
+				county.setCountyName(cursor.getString(cursor
+						.getColumnIndex("county_name")));
+				county.setCountyCode(cursor.getString(cursor
+						.getColumnIndex("county_code")));
+				county.setCityId(cursor.getInt(cursor
+						.getColumnIndex("city_id")));
+				county.setIsSelected(cursor.getInt(cursor
+						.getColumnIndex("is_selected")));
+				list.add(county);
+			} while (cursor.moveToNext());
+		}
+		return list;
+	}
+	
+	/**
+	 * 将Weather实例存储到数据库。
+	 */
+	public void saveWeather(Weather weather) {
+		if (weather != null) {
+			ContentValues values = new ContentValues();
+			values.put("area_name", weather.getAreaName());
+			values.put("weather_code", weather.getWeatherCode());
+			values.put("temp_high", weather.getTempHigh());
+			values.put("temp_low", weather.getTempLow());
+			values.put("weather_desp", weather.getWeatherDesp());
+			values.put("publish_time", weather.getPublishTime());
+			db.insert("Weather", null, values);
+		}
+	}
+	
+	/**
+	 * 根据天气代码查询天气信息
+	 */
+	public Weather queryWeatherInfo(String weatherCode) {
+		Weather weather = new Weather();
+		Cursor cursor = db.query("Weather", null, "weather_code = ?",
+				new String[] { weatherCode }, null, null, null);
+		if (cursor.moveToFirst()) {
+			weather.setAreaName(cursor.getString(cursor.getColumnIndex("area_name")));
+			weather.setWeatherCode(cursor.getString(cursor.getColumnIndex("weather_code")));
+			weather.setTempHigh(cursor.getString(cursor.getColumnIndex("temp_high")));
+			weather.setTempLow(cursor.getString(cursor.getColumnIndex("temp_low")));
+			weather.setWeatherDesp(cursor.getString(cursor.getColumnIndex("weather_desp")));
+			weather.setPublishTime(cursor.getString(cursor.getColumnIndex("publish_time")));
+		}
+		if (cursor != null) {
+			cursor.close();
+		}
+		return weather;
+	}
 
+	/**
+	 * 将Weather实例存储到数据库。
+	 */
+	public int updateWeather(Weather weather) {
+		if (weather != null) {
+			ContentValues values = new ContentValues();
+			values.put("area_name", weather.getAreaName());
+			values.put("weather_code", weather.getWeatherCode());
+			values.put("temp_high", weather.getTempHigh());
+			values.put("temp_low", weather.getTempLow());
+			values.put("weather_desp", weather.getWeatherDesp());
+			values.put("publish_time", weather.getPublishTime());
+			return db.update("Weather", values, "weather_code = ?", new String[] { weather.getWeatherCode() });
+		}
+		return -1;
+	}
+	
 }

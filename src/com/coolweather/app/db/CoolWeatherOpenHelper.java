@@ -29,7 +29,19 @@ public class CoolWeatherOpenHelper extends SQLiteOpenHelper {
 				+ "id integer primary key autoincrement, " 
 				+ "county_name text, " 
 				+ "county_code text, " 
-				+ "city_id integer)";
+				+ "city_id integer, "
+				+ "is_selected integer)";
+	/**
+	 *  Weather表建表语句
+	 */
+	public static final String CREATE_WEATHER = "create table Weather ("
+				+ "id integer primary key autoincrement, " 
+				+ "area_name text, " 
+				+ "weather_code text, " 
+				+ "temp_high text, "
+				+ "temp_low text, "
+				+ "weather_desp text, "
+				+ "publish_time text)";
 
 	public CoolWeatherOpenHelper(Context context, String name, CursorFactory factory,
 			int version) {
@@ -41,10 +53,17 @@ public class CoolWeatherOpenHelper extends SQLiteOpenHelper {
 		db.execSQL(CREATE_PROVINCE);  // 创建Province表
 		db.execSQL(CREATE_CITY);  // 创建City表
 		db.execSQL(CREATE_COUNTY);  // 创建County表
+		db.execSQL(CREATE_WEATHER); // 创建Weather表
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+		switch (oldVersion) {
+		case 1:
+			db.execSQL(CREATE_WEATHER);
+			db.execSQL("alter table County add column is_selected integer");
+		default:
+		}
 	}
 
 }
