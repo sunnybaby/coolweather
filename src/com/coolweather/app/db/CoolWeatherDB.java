@@ -12,6 +12,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.text.TextUtils;
 
 public class CoolWeatherDB {
 
@@ -23,7 +24,7 @@ public class CoolWeatherDB {
 	/**
 	 * 数据库版本
 	 */
-	public static final int VERSION = 2;
+	public static final int VERSION = 3;
 
 	private static CoolWeatherDB coolWeatherDB;
 
@@ -145,6 +146,10 @@ public class CoolWeatherDB {
 				county.setCountyCode(cursor.getString(cursor
 						.getColumnIndex("county_code")));
 				county.setCityId(cityId);
+				county.setIsSelected(cursor.getInt(cursor
+						.getColumnIndex("is_selected")));
+				county.setWeatherCode(cursor.getString(cursor
+						.getColumnIndex("weather_code")));
 				list.add(county);
 			} while (cursor.moveToNext());
 		}
@@ -161,9 +166,40 @@ public class CoolWeatherDB {
 			values.put("county_code", county.getCountyCode());
 			values.put("city_id", county.getCityId());
 			values.put("is_selected", county.getIsSelected());
+			values.put("weather_code", county.getWeatherCode());
 			db.update("County", values, "county_code = ?", new String[] { county.getCountyCode() });
 		}
 	}
+	
+	/**
+	 * 根据天气代码查询天气信息
+	 */
+	public County queryCountyByCountyCode(String countyCode) {
+		County county = null;
+		if (!TextUtils.isEmpty(countyCode)) {
+			Cursor cursor = db.query("County", null, "county_code = ?",
+					new String[] { countyCode }, null, null, null);
+			if (cursor.moveToFirst()) {
+				county = new County();
+				county.setId(cursor.getInt(cursor.getColumnIndex("id")));
+				county.setCountyName(cursor.getString(cursor
+						.getColumnIndex("county_name")));
+				county.setCountyCode(cursor.getString(cursor
+						.getColumnIndex("county_code")));
+				county.setCityId(cursor.getInt(cursor
+						.getColumnIndex("city_id")));
+				county.setIsSelected(cursor.getInt(cursor
+						.getColumnIndex("is_selected")));
+				county.setWeatherCode(cursor.getString(cursor
+						.getColumnIndex("weather_code")));
+			}
+			if (cursor != null) {
+				cursor.close();
+			}
+		}
+		return county;
+	}
+
 	
 	public List<County> getAllSelectedCounty() {
 		List<County> list = new ArrayList<County>();
@@ -181,6 +217,8 @@ public class CoolWeatherDB {
 						.getColumnIndex("city_id")));
 				county.setIsSelected(cursor.getInt(cursor
 						.getColumnIndex("is_selected")));
+				county.setWeatherCode(cursor.getString(cursor
+						.getColumnIndex("weather_code")));
 				list.add(county);
 			} while (cursor.moveToNext());
 		}
@@ -195,8 +233,8 @@ public class CoolWeatherDB {
 			ContentValues values = new ContentValues();
 			values.put("area_name", weather.getAreaName());
 			values.put("weather_code", weather.getWeatherCode());
-			values.put("temp_high", weather.getTempHigh());
-			values.put("temp_low", weather.getTempLow());
+			values.put("temp1", weather.getTemp1());
+			values.put("temp2", weather.getTemp2());
 			values.put("weather_desp", weather.getWeatherDesp());
 			values.put("publish_time", weather.getPublishTime());
 			db.insert("Weather", null, values);
@@ -207,19 +245,22 @@ public class CoolWeatherDB {
 	 * 根据天气代码查询天气信息
 	 */
 	public Weather queryWeatherInfo(String weatherCode) {
-		Weather weather = new Weather();
-		Cursor cursor = db.query("Weather", null, "weather_code = ?",
-				new String[] { weatherCode }, null, null, null);
-		if (cursor.moveToFirst()) {
-			weather.setAreaName(cursor.getString(cursor.getColumnIndex("area_name")));
-			weather.setWeatherCode(cursor.getString(cursor.getColumnIndex("weather_code")));
-			weather.setTempHigh(cursor.getString(cursor.getColumnIndex("temp_high")));
-			weather.setTempLow(cursor.getString(cursor.getColumnIndex("temp_low")));
-			weather.setWeatherDesp(cursor.getString(cursor.getColumnIndex("weather_desp")));
-			weather.setPublishTime(cursor.getString(cursor.getColumnIndex("publish_time")));
-		}
-		if (cursor != null) {
-			cursor.close();
+		Weather weather = null;
+		if (!TextUtils.isEmpty(weatherCode)) {
+			Cursor cursor = db.query("Weather", null, "weather_code = ?",
+					new String[] { weatherCode }, null, null, null);
+			if (cursor.moveToFirst()) {
+				weather = new Weather();
+				weather.setAreaName(cursor.getString(cursor.getColumnIndex("area_name")));
+				weather.setWeatherCode(cursor.getString(cursor.getColumnIndex("weather_code")));
+				weather.setTemp1(cursor.getString(cursor.getColumnIndex("temp1")));
+				weather.setTemp2(cursor.getString(cursor.getColumnIndex("temp2")));
+				weather.setWeatherDesp(cursor.getString(cursor.getColumnIndex("weather_desp")));
+				weather.setPublishTime(cursor.getString(cursor.getColumnIndex("publish_time")));
+			}
+			if (cursor != null) {
+				cursor.close();
+			}
 		}
 		return weather;
 	}
@@ -232,8 +273,8 @@ public class CoolWeatherDB {
 			ContentValues values = new ContentValues();
 			values.put("area_name", weather.getAreaName());
 			values.put("weather_code", weather.getWeatherCode());
-			values.put("temp_high", weather.getTempHigh());
-			values.put("temp_low", weather.getTempLow());
+			values.put("temp1", weather.getTemp1());
+			values.put("temp2", weather.getTemp2());
 			values.put("weather_desp", weather.getWeatherDesp());
 			values.put("publish_time", weather.getPublishTime());
 			return db.update("Weather", values, "weather_code = ?", new String[] { weather.getWeatherCode() });

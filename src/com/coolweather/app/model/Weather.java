@@ -22,11 +22,11 @@ public class Weather {
 	/**
 	 * 最高温度
 	 */
-	private String tempHigh;
+	private String temp1;
 	/**
 	 * 最低温度
 	 */
-	private String tempLow;
+	private String temp2;
 	/**
 	 * 天气描述
 	 */
@@ -52,20 +52,20 @@ public class Weather {
 		this.weatherCode = weatherCode;
 	}
 	
-	public String getTempHigh() {
-		return tempHigh;
+	public String getTemp1() {
+		return temp1;
 	}
 	
-	public void setTempHigh(String tempHigh) {
-		this.tempHigh = tempHigh;
+	public void setTemp1(String temp1) {
+		this.temp1 = temp1;
 	}
 	
-	public String getTempLow() {
-		return tempLow;
+	public String getTemp2() {
+		return temp2;
 	}
 	
-	public void setTempLow(String tempLow) {
-		this.tempLow = tempLow;
+	public void setTemp2(String temp2) {
+		this.temp2 = temp2;
 	}
 	
 	public String getWeatherDesp() {

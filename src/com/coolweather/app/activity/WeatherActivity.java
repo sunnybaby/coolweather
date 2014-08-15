@@ -22,7 +22,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.coolweather.app.R;
-import com.coolweather.app.adapters.CityWeatherPageAdapter;
+import com.coolweather.app.adapters.WeatherPageAdapter;
 import com.coolweather.app.component.CirclePageIndicator;
 import com.coolweather.app.db.CoolWeatherDB;
 import com.coolweather.app.model.County;
@@ -51,7 +51,7 @@ public class WeatherActivity extends Activity implements OnClickListener,OnPageC
 	 */
 	private ViewPager weatherViewPager;
 	
-	private CityWeatherPageAdapter cityWeatherPageAdapter;
+	private WeatherPageAdapter weatherPageAdapter;
 	
 	private List<Weather> weathers = new ArrayList<Weather>();
 	
@@ -71,19 +71,32 @@ public class WeatherActivity extends Activity implements OnClickListener,OnPageC
 		weatherViewPager = (ViewPager) findViewById(R.id.vp_city_weather);
 		pageIndicator = (CirclePageIndicator) findViewById(R.id.vpi_indicator);
 		
-		selectedCountyList = getIntent().getParcelableArrayListExtra("selected");
+		selectedCountyList = getIntent().getParcelableArrayListExtra("selected");//从ChooseAreaAcitvity带过来的已选城市列表
+		int position = getIntent().getIntExtra("position", 0);//当前要显示的位置
 		cityNameText.setText(selectedCountyList.get(0).getCountyName());
 		for (int i = 0; i < selectedCountyList.size(); i++) {
-			Weather weather = new Weather();
+			Weather weather = CoolWeatherDB.getInstance(this).queryWeatherInfo(
+									selectedCountyList.get(i).getWeatherCode());
+			if (weather == null) {
+				weather = new Weather();//如果数据库没有值，直接显示空
+				if (i == position) {
+					//如果当前显示的页为空，则仅去服务器查询当前显示的城市天气信息
+					queryWeatherCode(selectedCountyList.get(position).getCountyCode(), position);
+				}
+			}
 			weathers.add(weather);
 		}
-		cityWeatherPageAdapter = new CityWeatherPageAdapter(this, weathers);
-		weatherViewPager.setAdapter(cityWeatherPageAdapter);
+		
+		weatherPageAdapter = new WeatherPageAdapter(this, weathers);
+		weatherViewPager.setAdapter(weatherPageAdapter);
 		pageIndicator.setFillColor(getResources().getColor(
 				R.color.vpi__background_holo_light));
 		pageIndicator.setRadius(5);// viewpager底部小圆点半径
 		pageIndicator.setSnap(true);
 		pageIndicator.setViewPager(weatherViewPager, 0);
+		weatherViewPager.setCurrentItem(position);
+		pageIndicator.setCurrentItem(position);
+		cityNameText.setText(selectedCountyList.get(position).getCountyName());
 		
 		weatherViewPager.setOnPageChangeListener(this);
 		switchCity.setOnClickListener(this);
@@ -94,8 +107,6 @@ public class WeatherActivity extends Activity implements OnClickListener,OnPageC
 	    LinearLayout adLayout=(LinearLayout)findViewById(R.id.adLayout);
 	    //将广告条加入到布局中
 	    adLayout.addView(adView);
-	    
-	    queryWeatherCode(selectedCountyList.get(0).getCountyCode(), 0);
 	}
 	
 	@Override
@@ -108,10 +119,9 @@ public class WeatherActivity extends Activity implements OnClickListener,OnPageC
 			finish();
 			break;
 		case R.id.refresh_weather:
-//			publishText.setText("同步中...");
-//			SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-//			String weatherCode = prefs.getString("weather_code", "");
 			int position = weatherViewPager.getCurrentItem();
+			View view = weatherViewPager.findViewWithTag(position);
+			((TextView)(view.findViewById(R.id.publish_text))).setText("同步中...");
 			queryWeatherCode(selectedCountyList.get(position).getCountyCode(), position);
 			break;
 		default:
@@ -147,7 +157,11 @@ public class WeatherActivity extends Activity implements OnClickListener,OnPageC
 						// 从服务器返回的数据中解析出天气代号
 						String[] array = response.split("\\|");
 						if (array != null && array.length == 2) {
+							String countyCode = array[0];
 							String weatherCode = array[1];
+							County county = CoolWeatherDB.getInstance(WeatherActivity.this).queryCountyByCountyCode(countyCode);
+							county.setWeatherCode(weatherCode);
+							CoolWeatherDB.getInstance(WeatherActivity.this).updateCounty(county);
 							queryWeatherInfo(weatherCode, position);
 						}
 					}
@@ -158,7 +172,7 @@ public class WeatherActivity extends Activity implements OnClickListener,OnPageC
 					runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							cityWeatherPageAdapter.updateUIAtPosition(position);
+							weatherPageAdapter.updateUIAtPosition(position);
 						}
 					});
 				}
@@ -192,7 +206,14 @@ public class WeatherActivity extends Activity implements OnClickListener,OnPageC
 	public void onPageSelected(int position) {
 		cityNameText.setText(selectedCountyList.get(position).getCountyName());
 		pageIndicator.setCurrentItem(position);
-		queryWeatherCode(selectedCountyList.get(position).getCountyCode(), position);
+		String weatherCode = selectedCountyList.get(position).getWeatherCode();
+		Weather weather = CoolWeatherDB.getInstance(this).queryWeatherInfo(weatherCode);
+		if (weather == null) {
+			queryWeatherCode(selectedCountyList.get(position).getCountyCode(), position);
+		} else {
+			weathers.set(position, weather);
+			weatherPageAdapter.updateUIAtPosition(position);
+		}
 	}
 	
 	/**

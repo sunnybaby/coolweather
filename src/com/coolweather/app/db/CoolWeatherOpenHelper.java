@@ -30,7 +30,8 @@ public class CoolWeatherOpenHelper extends SQLiteOpenHelper {
 				+ "county_name text, " 
 				+ "county_code text, " 
 				+ "city_id integer, "
-				+ "is_selected integer)";
+				+ "is_selected integer, "
+				+ "weather_code text)";
 	/**
 	 *  Weather表建表语句
 	 */
@@ -38,8 +39,8 @@ public class CoolWeatherOpenHelper extends SQLiteOpenHelper {
 				+ "id integer primary key autoincrement, " 
 				+ "area_name text, " 
 				+ "weather_code text, " 
-				+ "temp_high text, "
-				+ "temp_low text, "
+				+ "temp1 text, "
+				+ "temp2 text, "
 				+ "weather_desp text, "
 				+ "publish_time text)";
 
@@ -62,6 +63,8 @@ public class CoolWeatherOpenHelper extends SQLiteOpenHelper {
 		case 1:
 			db.execSQL(CREATE_WEATHER);
 			db.execSQL("alter table County add column is_selected integer");
+		case 2:
+			db.execSQL("alter table County add column weather_code text");
 		default:
 		}
 	}

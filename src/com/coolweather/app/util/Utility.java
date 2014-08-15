@@ -80,6 +80,7 @@ public class Utility {
 					county.setCountyName(array[1]);
 					county.setCityId(cityId);
 					county.setIsSelected(0);
+					county.setWeatherCode("");
 					// 将解析出来的数据存储到County表
 					coolWeatherDB.saveCounty(county);
 				}
@@ -103,38 +104,32 @@ public class Utility {
 			String weatherDesp = weatherInfo.getString("weather");
 			String publishTime = weatherInfo.getString("ptime");
 			
-			Weather weather = new Weather();
-			weather.setAreaName(cityName);
-			weather.setWeatherCode(weatherCode);
-			weather.setTempHigh(temp1);
-			weather.setTempLow(temp2);
-			weather.setWeatherDesp(weatherDesp);
-			weather.setPublishTime(publishTime);
-			saveWeatherInfo(context, weather);
+			Weather weather = CoolWeatherDB.getInstance(context).queryWeatherInfo(weatherCode);
+			if (weather == null) {
+				//新添加天气信息
+				weather = new Weather();
+				weather.setAreaName(cityName);
+				weather.setWeatherCode(weatherCode);
+				weather.setTemp1(temp1);
+				weather.setTemp2(temp2);
+				weather.setWeatherDesp(weatherDesp);
+				weather.setPublishTime(new SimpleDateFormat("yyyy年M月d日", Locale.CHINA).format(new Date())
+						+ "-" + publishTime);
+				CoolWeatherDB.getInstance(context).saveWeather(weather);
+			} else {
+				//更新天气信息
+				weather.setTemp1(temp1);
+				weather.setTemp2(temp2);
+				weather.setWeatherDesp(weatherDesp);
+				weather.setPublishTime(new SimpleDateFormat("yyyy年M月d日", Locale.CHINA).format(new Date())
+						+ "-" + publishTime);
+				CoolWeatherDB.getInstance(context).updateWeather(weather);
+			}
 			return weather;
 		} catch (JSONException e) {
 			e.printStackTrace();
 			return null;
 		}
-	}
-
-	/**
-	 * 将服务器返回的所有天气信息存储到数据库中。
-	 */
-	public static void saveWeatherInfo(Context context, Weather weather) {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy年M月d日", Locale.CHINA);
-		/*SharedPreferences.Editor editor = PreferenceManager
-				.getDefaultSharedPreferences(context).edit();
-		editor.putBoolean("city_selected", true);
-		editor.putString("city_name", cityName);
-		editor.putString("weather_code", weatherCode);
-		editor.putString("temp1", temp1);
-		editor.putString("temp2", temp2);
-		editor.putString("weather_desp", weatherDesp);
-		editor.putString("publish_time", publishTime);
-		editor.putString("current_date", sdf.format(new Date()));
-		editor.commit();*/
-		CoolWeatherDB.getInstance(context).saveWeather(weather);
 	}
 
 }

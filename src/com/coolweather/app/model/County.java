@@ -15,6 +15,8 @@ public class County implements Parcelable{
 	
 	private int isSelected;
 	
+	private String weatherCode;
+	
 	public static final Parcelable.Creator<County> CREATOR = new Creator<County>() {
 
 		@Override
@@ -25,6 +27,7 @@ public class County implements Parcelable{
 			county.setCountyCode(source.readString());
 			county.setCityId(source.readInt());
 			county.setIsSelected(source.readInt());
+			county.setWeatherCode(source.readString());
 			return county;
 		}
 
@@ -75,6 +78,14 @@ public class County implements Parcelable{
 		this.isSelected = isSelected;
 	}
 
+	public String getWeatherCode() {
+		return weatherCode;
+	}
+
+	public void setWeatherCode(String weatherCode) {
+		this.weatherCode = weatherCode;
+	}
+
 	@Override
 	public int describeContents() {
 		// TODO Auto-generated method stub
@@ -88,6 +99,7 @@ public class County implements Parcelable{
 		dest.writeString(getCountyCode());
 		dest.writeInt(getCityId());
 		dest.writeInt(getIsSelected());
+		dest.writeString(getWeatherCode());
 	}
 	
 }

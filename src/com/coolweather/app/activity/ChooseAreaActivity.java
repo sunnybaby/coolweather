@@ -5,6 +5,7 @@ import java.util.List;
 
 import net.youmi.android.AdManager;
 import android.app.Activity;
+import android.app.DownloadManager.Query;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -32,9 +33,10 @@ import com.coolweather.app.util.Utility;
 
 public class ChooseAreaActivity extends Activity {
 
-	public static final int LEVEL_PROVINCE = 0;
-	public static final int LEVEL_CITY = 1;
-	public static final int LEVEL_COUNTY = 2;
+	public static final int LEVEL_SELECTED = 0;
+	public static final int LEVEL_PROVINCE = 1;
+	public static final int LEVEL_CITY = 2;
+	public static final int LEVEL_COUNTY = 3;
 	
 	private ProgressDialog progressDialog;
 	private TextView titleText;
@@ -70,6 +72,8 @@ public class ChooseAreaActivity extends Activity {
 	 * 是否从WeatherActivity中跳转过来。
 	 */
 	private boolean isFromWeatherActivity;
+	
+	private List<County> selectedCountyList;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -77,11 +81,9 @@ public class ChooseAreaActivity extends Activity {
 		AdManager.getInstance(this).init("cf9c2a749cd97145","289874826c698edd", false);
 		coolWeatherDB = CoolWeatherDB.getInstance(this);
 		isFromWeatherActivity = getIntent().getBooleanExtra("from_weather_activity", false);
-		List<County> selectedCountyList = coolWeatherDB.getAllSelectedCounty();
+		selectedCountyList = coolWeatherDB.getAllSelectedCounty();
 		if (selectedCountyList != null && selectedCountyList.size() > 0 && !isFromWeatherActivity) {
-			Intent intent = new Intent(this, WeatherActivity.class);
-			intent.putParcelableArrayListExtra("selected", (ArrayList<? extends Parcelable>) selectedCountyList);
-			startActivity(intent);
+			startWeatherAcitvity(0);
 			finish();
 			return;
 		}
@@ -95,7 +97,14 @@ public class ChooseAreaActivity extends Activity {
 			@Override
 			public void onItemClick(AdapterView<?> arg0, View view, int index,
 					long arg3) {
-				if (currentLevel == LEVEL_PROVINCE) {
+				if (currentLevel == LEVEL_SELECTED) {
+					if (index != selectedCountyList.size()) {
+						startWeatherAcitvity(index);
+						finish();
+					} else {
+						queryProvinces();
+					}
+				} else if (currentLevel == LEVEL_PROVINCE) {
 					selectedProvince = provinceList.get(index);
 					queryCities();
 				} else if (currentLevel == LEVEL_CITY) {
@@ -105,17 +114,22 @@ public class ChooseAreaActivity extends Activity {
 					County county = countyList.get(index);
 					county.setIsSelected(1);
 					coolWeatherDB.updateCounty(county);
-					
-					String countyCode = countyList.get(index).getCountyCode();
-					List<County> selectedCountyList = coolWeatherDB.getAllSelectedCounty();
-					Intent intent = new Intent(ChooseAreaActivity.this, WeatherActivity.class);
-					intent.putParcelableArrayListExtra("selected", (ArrayList<? extends Parcelable>) selectedCountyList);
-					startActivity(intent);
+					int position = -1;
+					if (selectedCountyList == null) {
+						position = 0;
+					} else {
+						position = selectedCountyList.size();
+					}
+					startWeatherAcitvity(position);
 					finish();
 				}
 			}
 		});
-		queryProvinces();  // 加载省级数据
+		if (selectedCountyList != null && selectedCountyList.size() > 0) {
+			showSelectedCounties();
+		} else {
+			queryProvinces();  // 加载省级数据
+		}
 	}
 
 	/**
@@ -233,6 +247,18 @@ public class ChooseAreaActivity extends Activity {
 		});
 	}
 	
+	private void showSelectedCounties() {
+		dataList.clear();
+		for (County county : selectedCountyList) {
+			dataList.add(county.getCountyName());
+		}
+		dataList.add("添加更多城市...");
+		adapter.notifyDataSetChanged();
+		listView.setSelection(0);
+		titleText.setText("已选城市");
+		currentLevel = LEVEL_SELECTED;
+	}
+	
 	/**
 	 * 显示进度对话框
 	 */
@@ -263,13 +289,21 @@ public class ChooseAreaActivity extends Activity {
 			queryCities();
 		} else if (currentLevel == LEVEL_CITY) {
 			queryProvinces();
+		} else if (currentLevel == LEVEL_PROVINCE && selectedCountyList != null && selectedCountyList.size() > 0) {
+			showSelectedCounties();
 		} else {
 			if (isFromWeatherActivity) {
-				Intent intent = new Intent(this, WeatherActivity.class);
-				startActivity(intent);
+				startWeatherAcitvity(0);
 			}
 			finish();
 		}
 	}
 
+	private void startWeatherAcitvity(int position) {
+		selectedCountyList = coolWeatherDB.getAllSelectedCounty();
+		Intent intent = new Intent(ChooseAreaActivity.this, WeatherActivity.class);
+		intent.putParcelableArrayListExtra("selected", (ArrayList<? extends Parcelable>) selectedCountyList);
+		intent.putExtra("position", position);
+		startActivity(intent);
+	}
 }
