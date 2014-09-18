@@ -282,4 +282,21 @@ public class CoolWeatherDB {
 		return -1;
 	}
 	
+	/** 
+	 * @author: WX
+	 * @Title: deleteSelectCountyByCode 
+	 * @Description: 根据城市代码逻辑删除已选城市
+	 * @param countyCode
+	 * @return 
+	 * @date: 2014-9-17 下午4:06:34
+	 */
+	public int deleteSelectCountyByCode(String countyCode) {
+		if (!TextUtils.isEmpty(countyCode)) {
+			ContentValues values = new ContentValues();
+			values.put("is_selected", "0");
+			return db.update("County", values, "county_code = ?", new String[] {countyCode});
+		}
+		return -1;
+	}
+	
 }

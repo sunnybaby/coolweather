@@ -5,8 +5,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.coolweather.app.R;
 import com.coolweather.app.model.Weather;
@@ -19,6 +21,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -34,10 +37,32 @@ public class WeatherPageAdapter extends PagerAdapter {
 	 */
 	private List<View> mPages = new ArrayList<View>();
 	
+	private Map<String, Integer> weatherIconMap = new HashMap<String, Integer>();
+	
 	public WeatherPageAdapter(Context context, List<Weather> weathers) {
 		mContext = context;
 		mWeathers = weathers;
+		initWeatherIconMap();
 		initPages();
+	}
+	
+	private void initWeatherIconMap() {
+		weatherIconMap.put("晴", R.drawable.sunny);
+		weatherIconMap.put("晴间多云", R.drawable.sunny_with_cloudy);
+		weatherIconMap.put("多云", R.drawable.cloudy);
+		weatherIconMap.put("多云转晴", R.drawable.cloudy_2_sunny);
+		weatherIconMap.put("小雨", R.drawable.small_rain);
+		weatherIconMap.put("阴转多云", R.drawable.overcast_2_cloudy);
+		weatherIconMap.put("多云转阴", R.drawable.overcast_2_cloudy);
+		weatherIconMap.put("大雨", R.drawable.heavy_rain);
+		weatherIconMap.put("中雨", R.drawable.heavy_rain);
+		weatherIconMap.put("大雨转中雨", R.drawable.heavy_rain);
+		weatherIconMap.put("中雨转大雨", R.drawable.heavy_rain);
+		weatherIconMap.put("雨夹雪", R.drawable.rain_with_snow);
+		weatherIconMap.put("小雪", R.drawable.little_snow);
+		weatherIconMap.put("大雪", R.drawable.heavy_snow);
+		weatherIconMap.put("雷阵雨", R.drawable.thunder_rain);
+		weatherIconMap.put("阴", R.drawable.overcast);
 	}
 	
 	/** 
@@ -56,6 +81,7 @@ public class WeatherPageAdapter extends PagerAdapter {
 				TextView temp1Text = (TextView) currentPageView.findViewById(R.id.temp1);
 				TextView temp2Text = (TextView) currentPageView.findViewById(R.id.temp2);
 				TextView currentDateText = (TextView) currentPageView.findViewById(R.id.current_date);
+				ImageView weatherIconView = (ImageView) currentPageView.findViewById(R.id.iv_icon);
 				
 				Weather w = mWeathers.get(i);
 				temp1Text.setText(TextUtils.isEmpty(w.getTemp1()) ? "--" : w.getTemp1());
@@ -63,6 +89,9 @@ public class WeatherPageAdapter extends PagerAdapter {
 				weatherDespText.setText(TextUtils.isEmpty(w.getWeatherDesp()) ? "--" : w.getWeatherDesp());
 				publishText.setText(getPublishText(w.getPublishTime()));
 				currentDateText.setText(TextUtils.isEmpty(w.getPublishTime()) ? "--年--月--日" : w.getPublishTime().split("-")[0]);
+				if (weatherIconMap.get(w.getWeatherDesp()) != null) {
+					weatherIconView.setImageResource(weatherIconMap.get(w.getWeatherDesp()));
+				}
 				weatherInfoLayout.setVisibility(View.VISIBLE);
 				
 				currentPageView.setTag(i);
@@ -83,13 +112,16 @@ public class WeatherPageAdapter extends PagerAdapter {
 		TextView temp1Text = (TextView) currentPageView.findViewById(R.id.temp1);
 		TextView temp2Text = (TextView) currentPageView.findViewById(R.id.temp2);
 		TextView currentDateText = (TextView) currentPageView.findViewById(R.id.current_date);
+		ImageView weatherIconView = (ImageView) currentPageView.findViewById(R.id.iv_icon);
 		
 		temp1Text.setText(mWeathers.get(position).getTemp1());
 		temp2Text.setText(mWeathers.get(position).getTemp2());
 		weatherDespText.setText(mWeathers.get(position).getWeatherDesp());
-		publishText.setText("今天" + mWeathers.get(position).getPublishTime().split("-")[1] + "发布");
+		publishText.setText(getPublishText(mWeathers.get(position).getPublishTime()));
 		currentDateText.setText(mWeathers.get(position).getPublishTime().split("-")[0]);
-		
+		if (weatherIconMap.get(mWeathers.get(position).getWeatherDesp()) != null) {
+			weatherIconView.setImageResource(weatherIconMap.get(mWeathers.get(position).getWeatherDesp()));
+		}
 		notifyDataSetChanged();
 	}
 	
@@ -104,7 +136,7 @@ public class WeatherPageAdapter extends PagerAdapter {
 				Calendar currentCalendar = Calendar.getInstance();
 				if (savedCalendar.get(Calendar.YEAR) == currentCalendar.get(Calendar.YEAR)
 						&& savedCalendar.get(Calendar.MONTH) == currentCalendar.get(Calendar.MONTH)) {
-					int duration = currentCalendar.get(Calendar.DATE);
+					int duration = currentCalendar.get(Calendar.DATE) - savedCalendar.get(Calendar.DATE);
 					switch (duration) {
 					case 0:
 						return "今天" + savedPublishTime.split("-")[1] + "发布";

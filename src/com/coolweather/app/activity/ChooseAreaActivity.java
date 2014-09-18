@@ -1,21 +1,34 @@
 package com.coolweather.app.activity;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.youmi.android.AdManager;
+import android.R.integer;
 import android.app.Activity;
 import android.app.DownloadManager.Query;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Address;
+import android.location.Criteria;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
+import android.view.ContextMenu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.AdapterView;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -72,8 +85,14 @@ public class ChooseAreaActivity extends Activity {
 	 * 是否从WeatherActivity中跳转过来。
 	 */
 	private boolean isFromWeatherActivity;
-	
+	/**
+	 * 已选城市列表
+	 */
 	private List<County> selectedCountyList;
+	/**
+	 * 当前定位城市
+	 */
+	private Location mCurrentLocation;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +109,7 @@ public class ChooseAreaActivity extends Activity {
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.choose_area);
 		listView = (ListView) findViewById(R.id.list_view);
+		registerForContextMenu(listView);
 		titleText = (TextView) findViewById(R.id.title_text);
 		adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, dataList);
 		listView.setAdapter(adapter);
@@ -98,11 +118,13 @@ public class ChooseAreaActivity extends Activity {
 			public void onItemClick(AdapterView<?> arg0, View view, int index,
 					long arg3) {
 				if (currentLevel == LEVEL_SELECTED) {
-					if (index != selectedCountyList.size()) {
-						startWeatherAcitvity(index);
-						finish();
-					} else {
+					if (index == dataList.size() - 1) {
 						queryProvinces();
+					} else if (index == 0){
+						
+					} else {
+						startWeatherAcitvity(index - 1);
+						finish();
 					}
 				} else if (currentLevel == LEVEL_PROVINCE) {
 					selectedProvince = provinceList.get(index);
@@ -130,6 +152,33 @@ public class ChooseAreaActivity extends Activity {
 		} else {
 			queryProvinces();  // 加载省级数据
 		}
+	}
+	
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v,
+			ContextMenuInfo menuInfo) {
+		super.onCreateContextMenu(menu, v, menuInfo);
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.main, menu);
+	}
+	
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		int position = ((AdapterContextMenuInfo)(item.getMenuInfo())).position;
+		switch (id) {
+		case R.id.action_delete:
+			if (position != selectedCountyList.size() - 1) {
+				coolWeatherDB.deleteSelectCountyByCode(selectedCountyList.get(position - 1).getCountyCode());
+				selectedCountyList.clear();
+				selectedCountyList = coolWeatherDB.getAllSelectedCounty();
+				showSelectedCounties();
+			}
+			break;
+		default:
+			break;
+		}
+		return super.onContextItemSelected(item);
 	}
 
 	/**
@@ -249,10 +298,11 @@ public class ChooseAreaActivity extends Activity {
 	
 	private void showSelectedCounties() {
 		dataList.clear();
+		dataList.add("当前定位城市：" + getLocatedCounty());
 		for (County county : selectedCountyList) {
 			dataList.add(county.getCountyName());
 		}
-		dataList.add("添加更多城市...");
+		dataList.add("+ 添加更多城市...");
 		adapter.notifyDataSetChanged();
 		listView.setSelection(0);
 		titleText.setText("已选城市");
@@ -305,5 +355,59 @@ public class ChooseAreaActivity extends Activity {
 		intent.putParcelableArrayListExtra("selected", (ArrayList<? extends Parcelable>) selectedCountyList);
 		intent.putExtra("position", position);
 		startActivity(intent);
+	}
+	
+	private String getLocatedCounty() {
+		LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
+		Criteria criteria = new Criteria();
+		// 获得最好的定位效果
+		criteria.setAccuracy(Criteria.ACCURACY_FINE);
+		criteria.setAltitudeRequired(false);
+		criteria.setBearingRequired(false);
+		criteria.setCostAllowed(false);
+		// 使用省电模式
+		criteria.setPowerRequirement(Criteria.POWER_LOW);
+		// 获得当前的位置提供者
+		String provider = locationManager.getBestProvider(criteria, true);
+		// 获得当前的位置
+		mCurrentLocation = locationManager.getLastKnownLocation(provider);
+		while (mCurrentLocation == null) {
+			locationManager.requestLocationUpdates(provider, 0, 0, new LocationListener() {
+				
+				@Override
+				public void onStatusChanged(String provider, int status, Bundle extras) {
+					// TODO Auto-generated method stub
+					
+				}
+				
+				@Override
+				public void onProviderEnabled(String provider) {
+					// TODO Auto-generated method stub
+					
+				}
+				
+				@Override
+				public void onProviderDisabled(String provider) {
+					// TODO Auto-generated method stub
+					
+				}
+				
+				@Override
+				public void onLocationChanged(Location location) {
+					mCurrentLocation = location;
+				}
+			});
+		}
+		Geocoder gc = new Geocoder(this);
+		List<Address> addresses = null;
+		try {
+			addresses = gc.getFromLocation(mCurrentLocation.getLatitude(),
+					mCurrentLocation.getLongitude(), 1);
+			return addresses.get(0).getAdminArea() + " " + addresses.get(0).getLocality();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 }
